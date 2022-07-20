@@ -20,7 +20,7 @@ public class Plugin extends JavaPlugin {
 
         Containers containers = new Containers(this.getDataFolder(), logger);
         if (containers.init()) {
-            this.getServer().getPluginManager().registerEvents(new ChestListener(containers, logger), this);
+            this.getServer().getPluginManager().registerEvents(new ChestListener(this, containers, logger), this);
         } else {
             throw new RuntimeException("Plugin initialize failed...");
         }

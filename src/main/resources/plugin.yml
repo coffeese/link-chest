@@ -1,4 +1,4 @@
 name: "link-chest"
-version: "0.0.2"
+version: "0.0.3"
 main: "dev.coffeese.linkchest.Plugin"
-api-version: "1.17"
+api-version: "1.19"

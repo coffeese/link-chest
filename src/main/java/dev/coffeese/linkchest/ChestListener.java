@@ -20,17 +20,25 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import dev.coffeese.linkchest.Containers.ContainerData;
 
 public class ChestListener implements Listener {
 
+    private final Plugin plugin;
     private final Logger logger;
     private final Map<String, Barrel> caches = new HashMap<>();
     private final Containers containers;
 
-    public ChestListener(Containers containers, Logger logger) {
+    public ChestListener(Plugin plugin, Containers containers, Logger logger) {
+        this.plugin = plugin;
         this.containers = containers;
         this.logger = logger;
 
@@ -133,6 +141,56 @@ public class ChestListener implements Listener {
             player.sendMessage("[LinkChest]" + ChatColor.RED + " " + name + " broken error!");
         }
         caches.remove(name);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onMoveItem(final InventoryMoveItemEvent e) {
+        Inventory initiator = e.getInitiator();
+        if (initiator.getType() != InventoryType.HOPPER)
+            return;
+
+        Inventory destination = e.getDestination();
+        if (destination.getType() != InventoryType.CHEST)
+            return;
+
+        if (destination.getSize() != 27)
+            return;
+
+        Chest chest = (Chest)destination.getHolder();
+        if (chest.getCustomName() == null)
+            return;
+
+        String name = chest.getCustomName();
+        if (!name.startsWith("@@"))
+            return;
+
+        e.setCancelled(true);
+
+        if (!caches.containsKey(name))
+            return;
+
+        ItemStack stack = e.getItem();
+        Inventory source = e.getSource();
+        Inventory barrel = caches.get(name).getInventory();
+        int amount = stack.getAmount();
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                int index = source.first(stack.getType());
+                if (index < 0)
+                    return;
+
+                ItemStack sourceStack = source.getItem(index);
+                ItemStack destinationStack = sourceStack.clone();
+                sourceStack.setAmount(sourceStack.getAmount() - amount);
+                destinationStack.setAmount(amount);
+
+                HashMap<Integer, ItemStack> lefts = barrel.addItem(destinationStack);
+                for (ItemStack left : lefts.values())
+                    source.addItem(left);
+            }
+        }.runTaskLater(this.plugin, 1);
     }
 
     private void init() {
