@@ -47,6 +47,10 @@ public class ChestListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onInventoryOpen(final PlayerInteractEvent e) {
+        Player player = e.getPlayer();
+        if (player.isSneaking())
+            return;
+
         if (e.getAction() != Action.RIGHT_CLICK_BLOCK)
             return;
 
@@ -67,7 +71,6 @@ public class ChestListener implements Listener {
 
         e.setCancelled(true);
 
-        Player player = e.getPlayer();
         if (caches.containsKey(name)) {
             Barrel barrel = caches.get(name);
             player.openInventory(barrel.getInventory());
