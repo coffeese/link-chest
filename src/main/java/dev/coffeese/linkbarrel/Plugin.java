@@ -1,4 +1,4 @@
-package dev.coffeese.linkchest;
+package dev.coffeese.linkbarrel;
 
 import java.util.logging.Logger;
 

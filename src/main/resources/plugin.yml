@@ -1,4 +1,4 @@
-name: "link-chest"
+name: "link-barrel"
 version: "0.0.4"
-main: "dev.coffeese.linkchest.Plugin"
+main: "dev.coffeese.linkbarrel.Plugin"
 api-version: "1.19"
