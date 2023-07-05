@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import javax.annotation.Nullable;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -33,7 +35,7 @@ public class ChestListener implements Listener {
 
     private final Plugin plugin;
     private final Logger logger;
-    private final Map<String, Barrel> caches = new HashMap<>();
+    private final Map<String, ContainerData> caches = new HashMap<>();
     private final Containers containers;
 
     public ChestListener(Plugin plugin, Containers containers, Logger logger) {
@@ -72,9 +74,16 @@ public class ChestListener implements Listener {
 
         String name = realName.substring(2);
         if (caches.containsKey(name)) {
-            Barrel barrel = caches.get(name);
-            player.openInventory(barrel.getInventory());
-            player.playSound(player.getLocation(), Sound.BLOCK_BARREL_OPEN, 1, 1);
+            ContainerData data = caches.get(name);
+            Barrel barrel = findBarrel(data);
+            if (barrel != null) {
+                player.openInventory(barrel.getInventory());
+                player.playSound(player.getLocation(), Sound.BLOCK_BARREL_OPEN, 1, 1);
+            } else {
+                player.sendMessage("[LinkBarrel]" + ChatColor.RED + " Not found parent container!");
+                caches.remove(name);
+                return;
+            }
         } else {
             player.sendMessage("[LinkBarrel]" + ChatColor.RED + " Cannot open parent container!");
         }
@@ -102,9 +111,10 @@ public class ChestListener implements Listener {
             return;
         }
 
-        if (containers.addContainer(realName, barrel)) {
+        ContainerData data = containers.addContainer(realName, barrel);
+        if (data != null) {
             player.sendMessage("[LinkBarrel]" + ChatColor.GREEN + " " + name + " is ready!");
-            caches.put(name, barrel);
+            caches.put(name, data);
         } else {
             player.sendMessage("[LinkBarrel]" + ChatColor.RED + " " + name + " error!");
         }
@@ -128,14 +138,14 @@ public class ChestListener implements Listener {
         if (!caches.containsKey(name))
             return;
 
-        Barrel target = caches.get(name);
-        if (barrel.getX() != target.getX())
+        ContainerData data = caches.get(name);
+        if (barrel.getX() != data.x)
             return;
 
-        if (barrel.getY() != target.getY())
+        if (barrel.getY() != data.y)
             return;
 
-        if (barrel.getZ() != target.getZ())
+        if (barrel.getZ() != data.z)
             return;
 
         Player player = e.getPlayer();
@@ -144,7 +154,9 @@ public class ChestListener implements Listener {
         }
 
         if (!containers.removeContainer(realName)) {
-            player.sendMessage("[LinkBarrel]" + ChatColor.RED + " " + name + " broken error!");
+            if (player != null) {
+                player.sendMessage("[LinkBarrel]" + ChatColor.RED + " " + name + " broken error!");
+            }
         }
         caches.remove(name);
     }
@@ -175,7 +187,12 @@ public class ChestListener implements Listener {
 
         ItemStack stack = e.getItem();
         Inventory source = e.getSource();
-        Inventory barrel = caches.get(name).getInventory();
+        ContainerData data = caches.get(name);
+        Barrel barrel = findBarrel(data);
+        if (barrel == null)
+         return;
+
+        Inventory target = barrel.getInventory();
         int amount = stack.getAmount();
 
         new BukkitRunnable() {
@@ -190,7 +207,7 @@ public class ChestListener implements Listener {
                 sourceStack.setAmount(sourceStack.getAmount() - amount);
                 destinationStack.setAmount(amount);
 
-                HashMap<Integer, ItemStack> lefts = barrel.addItem(destinationStack);
+                HashMap<Integer, ItemStack> lefts = target.addItem(destinationStack);
                 for (ItemStack left : lefts.values())
                     source.addItem(left);
             }
@@ -205,28 +222,13 @@ public class ChestListener implements Listener {
         }
 
         for (ContainerData data : list) {
-            UUID uuid = UUID.fromString(data.uuid);
-            World world = Bukkit.getWorld(uuid);
-            if (world == null) {
-                logger.warning(data.name + " is located unknown world.");
-                containers.removeContainer(data.name);
-                continue;
-            }
-
-            Block block = world.getBlockAt(data.x, data.y, data.z);
-            if (block == null) {
+            Barrel barrel = findBarrel(data);
+            if (barrel == null) {
                 logger.warning(data.name + " is not found.");
                 containers.removeContainer(data.name);
                 continue;
             }
 
-            if (block.getType() != Material.BARREL) {
-                logger.warning(data.name + " is not barrel.");
-                containers.removeContainer(data.name);
-                continue;
-            }
-
-            Barrel barrel = (Barrel)block.getState();
             String realName = barrel.getCustomName();
             if (realName == null) {
                 logger.warning(data.name + " is not named.");
@@ -241,7 +243,31 @@ public class ChestListener implements Listener {
             }
 
             String name = realName.substring(2);
-            caches.put(name, barrel);
+            caches.put(name, data);
         }
+    }
+
+    @Nullable
+    private Barrel findBarrel(ContainerData data) {
+        UUID uuid = UUID.fromString(data.uuid);
+        World world = Bukkit.getWorld(uuid);
+        if (world == null) {
+            logger.warning(data.name + " is located unknown world.");
+            return null;
+        }
+
+        Block block = world.getBlockAt(data.x, data.y, data.z);
+        if (block == null) {
+            logger.warning(data.name + " is not located.");
+            return null;
+        }
+
+        if (block.getType() != Material.BARREL) {
+            logger.warning(data.name + " is not barrel.");
+            return null;
+        }
+
+        Barrel barrel = (Barrel)block.getState();
+        return barrel;
     }
 }
