@@ -78,7 +78,7 @@ public class ChestListener implements Listener {
             Barrel barrel = findBarrel(data);
             if (barrel != null) {
                 player.openInventory(barrel.getInventory());
-                player.playSound(player.getLocation(), Sound.BLOCK_BARREL_OPEN, 1, 1);
+                player.playSound(player.getLocation(), Sound.BLOCK_BARREL_OPEN, 0.5f, 1);
             } else {
                 player.sendMessage("[LinkBarrel]" + ChatColor.RED + " Not found parent container!");
                 caches.remove(name);
@@ -105,13 +105,12 @@ public class ChestListener implements Listener {
 
         Player player = e.getPlayer();
         String name = realName.substring(2);
-        name = name.substring(2);
         if (caches.containsKey(name)) {
             player.sendMessage("[LinkBarrel]" + ChatColor.RED + " " + name + " is already exists!");
             return;
         }
 
-        ContainerData data = containers.addContainer(realName, barrel);
+        ContainerData data = containers.addContainer(name, barrel);
         if (data != null) {
             player.sendMessage("[LinkBarrel]" + ChatColor.GREEN + " " + name + " is ready!");
             caches.put(name, data);
@@ -236,13 +235,13 @@ public class ChestListener implements Listener {
                 continue;
             }
 
-            if (!realName.equals(data.name)) {
+            String name = realName.substring(2);
+            if (!name.equals(data.name)) {
                 logger.warning(data.name + " is invalid name, actual " + realName + ".");
                 containers.removeContainer(data.name);
                 continue;
             }
 
-            String name = realName.substring(2);
             caches.put(name, data);
         }
     }
