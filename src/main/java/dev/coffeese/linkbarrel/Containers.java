@@ -1,4 +1,4 @@
-package dev.coffeese.linkchest;
+package dev.coffeese.linkbarrel;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.annotation.Nullable;
 
 import org.bukkit.block.Container;
 
@@ -71,6 +73,7 @@ public class Containers {
         }
     }
 
+    @Nullable
     public List<ContainerData> loadContainers() {
         final String sql = "SELECT * FROM " + TABLENAME + ";";
 
@@ -95,14 +98,22 @@ public class Containers {
         return null;
     }
 
-    public boolean addContainer(String name, Container container) {
+    @Nullable
+    public ContainerData addContainer(String name, Container container) {
         if (!prepare())
-            return false;
+            return null;
 
-        if (!saveContainer(name, container))
-            return false;
+        ContainerData data = new ContainerData();
+        data.name = name;
+        data.uuid = container.getWorld().getUID().toString();
+        data.x = container.getX();
+        data.y = container.getY();
+        data.z = container.getZ();
 
-        return true;
+        if (!saveContainer(name, data))
+            return null;
+
+        return data;
     }
 
     public boolean removeContainer(String name) {
@@ -169,15 +180,15 @@ public class Containers {
         }
     }
 
-    private boolean saveContainer(String name, Container container) {
+    private boolean saveContainer(String name, ContainerData data) {
         final String sql = "INSERT INTO " + TABLENAME + "(name, uuid, x, y, z) VALUES(?, ?, ?, ?, ?);";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, name);
-            statement.setString(2, container.getWorld().getUID().toString());
-            statement.setInt(3, container.getX());
-            statement.setInt(4, container.getY());
-            statement.setInt(5, container.getZ());
+            statement.setString(2, data.uuid);
+            statement.setInt(3, data.x);
+            statement.setInt(4, data.y);
+            statement.setInt(5, data.z);
             statement.executeUpdate();
         } catch (SQLException e) {
             logger.log(Level.WARNING, "Save container failed...", e);

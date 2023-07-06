@@ -1,15 +1,15 @@
 plugins {
-    id 'java'
+  id 'java'
 }
 
 group 'dev.coffeese.minecraft'
-version '0.0.4-SNAPSHOT'
+version '0.0.5-SNAPSHOT'
 
 repositories {
-    mavenCentral()
-    maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+  mavenCentral()
+  maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
 }
 
 dependencies {
-  compileOnly 'org.spigotmc:spigot-api:1.19-R0.1-SNAPSHOT'
+  compileOnly 'org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT'
 }
