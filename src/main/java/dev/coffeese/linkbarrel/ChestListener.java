@@ -152,7 +152,7 @@ public class ChestListener implements Listener {
             player.sendMessage("[LinkBarrel]" + ChatColor.GREEN + " " + name + " was broken!");
         }
 
-        if (!containers.removeContainer(realName)) {
+        if (!containers.removeContainer(name)) {
             if (player != null) {
                 player.sendMessage("[LinkBarrel]" + ChatColor.RED + " " + name + " broken error!");
             }
